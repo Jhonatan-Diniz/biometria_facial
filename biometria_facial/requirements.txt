@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------
+# Dependências do projeto de biometria facial (APS)
+# Ambiente alvo: Python 3.11, CPU, Windows ou Linux
+#
+# ---------------------------------------------------------------
+# REGRA 1 - Instale APENAS opencv-contrib-python.
+#   Nunca instale opencv-python junto: os dois pacotes escrevem no
+#   mesmo namespace "cv2" e um sobrescreve o outro. O resultado é
+#   cv2.FaceDetectorYN e cv2.FaceRecognizerSF simplesmente sumirem.
+#
+# REGRA 2 - numpy fica ABAIXO DE 2.
+#   Motivo: o mediapipe (usado na Fase 5 de liveness) declara a
+#   dependência sem fixar versão, mas quebra em runtime com numpy 2.x
+#   (erro "module 'numpy' has no attribute 'bool8'").
+#   Consequência: o opencv-contrib-python precisa ser o da série 4.10,
+#   que aceita numpy 1.x. As séries 4.11+ já exigem numpy>=2 e são
+#   incompatíveis com o numpy 1.26.
+#
+# Se precisar subir o numpy para 2.x no futuro, também suba o opencv e
+# o mediapipe — mas para este trabalho o conjunto 1.26.4 + 4.10.0.84 é
+# o mais testado e o que menos dá problema.
+# ---------------------------------------------------------------
+
+numpy==1.26.4
+opencv-contrib-python==4.10.0.84
+
+# Banco e criptografia dos embeddings (Fernet)
+cryptography==42.0.8
+
+# Avaliação de FAR/FRR/EER e gráficos (Fase 4)
+scikit-learn==1.5.2
+matplotlib==3.9.2
+
+# ---------------------------------------------------------------
+# Liveness opcional (Fase 5). DEIXADO COMENTADO DE PROPÓSITO.
+# Motivo: o mediapipe arrasta jax/jaxlib (pesados) e pode conflitar
+# na instalação. Como a Fase 5 é a última e opcional, deixar o projeto
+# funcionar sem ela é mais seguro. Quando chegar na Fase 5:
+#   1. descomente a linha abaixo
+#   2. rode: pip install mediapipe==0.10.14
+#   3. teste: python -c "import mediapipe; print(mediapipe.__version__)"
+# Se o import falhar, a alternativa mais simples e usar EAR calculado
+# com OpenCV puro (area dos olhos), sem dependencia nova.
+# ---------------------------------------------------------------
+# mediapipe==0.10.14

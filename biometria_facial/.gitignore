@@ -1,0 +1,18 @@
+# Ambiente virtual do projeto
+.venv/
+venv/
+
+# Modelos .onnx baixados automaticamente
+models/*.onnx
+
+# Dados sensiveis: banco, chave e fotos de rostos.
+# NUNCA versionar fotos nem a chave de criptografia.
+data/
+logs/
+tests/results/
+
+# Sistema
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

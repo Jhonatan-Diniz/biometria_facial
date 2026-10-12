@@ -22,7 +22,10 @@ def normalizar(embedding):
     Normaliza o embedding para norma 1.
     Se o vetor for nulo (impossivel na pratica), devolve o proprio vetor.
     """
-    embedding = np.asarray(embedding, dtype=np.float64)
+    # reshape(-1) garante vetor 1D mesmo que venha no shape (1, 128),
+    # que e como o SFace devolve. Sem isso o np.dot falha com
+    # "shapes not aligned".
+    embedding = np.asarray(embedding, dtype=np.float64).reshape(-1)
     norma = np.linalg.norm(embedding)
     if norma == 0:
         return embedding
@@ -37,6 +40,16 @@ def distancia_cosseno(embedding_a, embedding_b):
     """
     a = normalizar(embedding_a)
     b = normalizar(embedding_b)
+
+    # Sanidade: se os dois vetores nao tiverem a mesma dimensao,
+    # ha bug em quem gerou o embedding. Falhar aqui e melhor do que
+    # propagar um erro de shape la no np.dot.
+    if a.shape != b.shape:
+        raise ValueError(
+            f"Embeddings com dimensao diferente: {a.shape} vs {b.shape}. "
+            "Isso indica bug na geração dos embeddings, não nas fotos."
+        )
+
     produto = float(np.dot(a, b))
     # Evita erro de ponto flutuante: produto pode ser 1.0000000001
     produto = max(-1.0, min(1.0, produto))

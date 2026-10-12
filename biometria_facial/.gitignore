@@ -16,3 +16,8 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Exportacoes de sessao do opencode (JSONL, contem o transcript interno)
+*transcripty*
+*_transcript*
+session.json

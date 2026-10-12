@@ -48,7 +48,7 @@ def _inicializar():
             "'opencv-contrib-python'.\n"
             "Solucao:\n"
             "  pip uninstall -y opencv-python opencv-contrib-python\n"
-            "  pip install opencv-contrib-python==4.12.0.88"
+            "  pip install opencv-contrib-python==4.10.0.84"
         )
 
     if not modelo_existe(config.YUNET_MODEL):
@@ -70,9 +70,16 @@ def _inicializar():
 
 def _redimensionar_para_detector(imagem):
     """
-    YuNet foi treinado com entradas pequenas. Se a imagem for muito grande,
-    reduzimos proporcionalmente e guardamos o fator para devolver as
-    coordenadas no tamanho original.
+    Reduz a imagem antes de detectar, e devolve o fator de reducao.
+
+    YuNet foi treinado com entradas pequenas, entao imagem muito grande e
+    reduzida para nao ficar lenta.
+
+    IMPORTANTE: a escala devolvida e um fator de REDUCAO (menor que 1
+    quando a imagem foi diminuida). Para levar uma coordenada medida na
+    imagem reduzida de volta para a original, divide-se pela escala.
+    Multiplicar encolheria as coordenadas e a caixa de rosto sairia no
+    lugar errado da imagem.
     """
     altura, largura = imagem.shape[:2]
     maior = max(altura, largura)
@@ -86,23 +93,44 @@ def _redimensionar_para_detector(imagem):
     return imagem_red, escala
 
 
-def avaliar_qualidade(imagem, rosto):
+def avaliar_qualidade(imagem, rosto, nitidez_minima=None):
     """
     Avalia se um rosto detectado serve para biometria.
 
-    rosto: dicionario com 'bbox' (x, y, w, h), 'score' e 'landmarks'.
+    rosto: dicionario com 'bbox' (x, y, w, h) e 'score'.
 
-    Devolve (ok, motivo). 'motivo' explica a recusa, uteil para o usuario.
+    nitidez_minima: sobrepõe config.MIN_SHARPNESS quando informado. O
+    cadastro usa um valor mais brando (ver config.MIN_SHARPNESS_CADASTRO).
+
+    Devolve (ok, motivo). 'motivo' explica a recusa, util para o usuario.
     """
+    if nitidez_minima is None:
+        nitidez_minima = config.MIN_SHARPNESS
+
+    # O tamanho do rosto e medido no ESPACO EM QUE O YuNet OPERA, que e a
+    # imagem ja reduzida. Isso torna o criterio independente da resolucao:
+    # numa foto de 4000px o mesmo rosto mede 800px; numa de 900px, 180px.
+    # Medir na imagem original reprovaria selfies em camera boa e aceitaria
+    # as mesmas fotos se o usuario reduzisse a resolucao.
+    escala = rosto.get("escala", 1.0)
+
     _, _, largura_rosto, altura_rosto = rosto["bbox"]
-    lado_menor = min(largura_rosto, altura_rosto)
-    lado_maior = max(largura_rosto, altura_rosto)
+    largura_det = largura_rosto * escala
+    altura_det = altura_rosto * escala
+    lado_menor = min(largura_det, altura_det)
+    lado_maior = max(largura_det, altura_det)
 
     if lado_menor < config.MIN_FACE_SIZE:
-        return False, f"rosto pequeno demais ({int(lado_menor)}px, min {config.MIN_FACE_SIZE}px): aproxime-se"
+        return False, (
+            f"rosto pequeno demais ({int(lado_menor)}px na imagem de deteccao, "
+            f"min {config.MIN_FACE_SIZE}px): aproxime-se"
+        )
 
     if lado_maior > config.MAX_FACE_SIZE:
-        return False, f"rosto grande demais ({int(lado_maior)}px, max {config.MAX_FACE_SIZE}px): afaste-se"
+        return False, (
+            f"rosto grande demais ({int(lado_maior)}px na imagem de deteccao, "
+            f"max {config.MAX_FACE_SIZE}px): afaste-se"
+        )
 
     if rosto["score"] < config.YUNET_SCORE_THRESHOLD:
         return False, f"deteccao fraca (confianca {rosto['score']:.2f})"
@@ -115,13 +143,22 @@ def avaliar_qualidade(imagem, rosto):
 
     cinza = cv2.cvtColor(recorte, cv2.COLOR_BGR2GRAY)
     nitidez = cv2.Laplacian(cinza, cv2.CV_64F).var()
-    if nitidez < config.MIN_SHARPNESS:
-        return False, f"foto borrada (nitidez {nitidez:.0f}, min {config.MIN_SHARPNESS:.0f})"
+
+    if nitidez < nitidez_minima:
+        # Diagnostico: nitidez quase zero E contraste baixo significa que o
+        # recorte caiu em area lisa (parede, fundo), e nao no rosto.
+        contraste = float(cinza.std())
+        if nitidez < 5 and contraste < 15:
+            return False, (
+                f"recorte sem detalhe (nitidez {nitidez:.0f}, contraste {contraste:.0f}): "
+                "o detector marcou uma regiao lisa. Rode scripts/diagnostico.py"
+            )
+        return False, f"foto borrada (nitidez {nitidez:.0f}, min {nitidez_minima:.0f})"
 
     return True, "ok"
 
 
-def detectar_rostos(imagem, aplicar_filtro_qualidade=True):
+def detectar_rostos(imagem, aplicar_filtro_qualidade=True, nitidez_minima=None):
     """
     Detecta rostos em uma imagem BGR.
 
@@ -132,6 +169,9 @@ def detectar_rostos(imagem, aplicar_filtro_qualidade=True):
       qualidade -> (ok, motivo)
 
     A lista vem ordenada do rosto mais confiante para o menos.
+
+    nitidez_minima: repassa o limiar para avaliar_qualidade(). O cadastro
+    usa um valor mais brando que o da autenticacao.
     """
     if imagem is None:
         return []
@@ -149,15 +189,26 @@ def detectar_rostos(imagem, aplicar_filtro_qualidade=True):
 
     resultado = []
     for rosto in rostos:
-        # rosto vem como [x, y, w, h, score, x_re, y_re, x_rd, y_rd, x_nariz, y_nariz, x_bq_e, y_bq_e, x_bq_d, y_bq_d]
-        bbox = tuple(float(v) for v in rosto[:4])
-        score = float(rosto[4])
-        pontos = rosto[5:15]
+        # Cada linha do YuNet tem 15 colunas, nesta ordem:
+        #   [0:4]   bbox -> x, y, largura, altura
+        #   [4:14]  5 landmarks -> olho esq, olho dir, nariz, boca esq, boca dir
+        #   [14]    confianca (a ULTIMA coluna, nao a quinta)
+        # Ordem conferida no demo oficial do opencv_zoo.
+        bbox = tuple(float(v) for v in rosto[0:4])
+        pontos = rosto[4:14]
+        score = float(rosto[-1])
 
-        # Desfaz o redimensionamento para voltar ao tamanho original
-        bbox_original = tuple(v * escala for v in bbox)
+        # Desfaz o redimensionamento para voltar ao tamanho original.
+        #
+        # ATENCAO: aqui se DIVIDE pela escala, e nao multiplica.
+        # A escala e o fator de REDUCAO: se a imagem de 1600px foi reduzida
+        # para 640px, escala = 0.4. Uma coordenada medida na imagem reduzida
+        # (ex: 82px) corresponde a 82 / 0.4 = 205px na original.
+        # Multiplicar por 0.4 daria 33px, e a caixa cairia no canto errado
+        # da imagem -- foi exatamente esse o bug que rechazava todas as fotos.
+        bbox_original = tuple(v / escala for v in bbox)
         pontos_originais = [
-            float(pontos[i] * escala) for i in range(len(pontos))
+            float(pontos[i] / escala) for i in range(len(pontos))
         ]
 
         dicionario = {
@@ -169,11 +220,14 @@ def detectar_rostos(imagem, aplicar_filtro_qualidade=True):
         }
 
         if aplicar_filtro_qualidade:
-            # Filtra sempre na imagem original (nitidez e medida em px reais)
-            dicionario["qualidade"] = avaliar_qualidade(imagem, {
-                "bbox": bbox_original,
-                "score": score,
-            })
+            # Filtra sempre na imagem original (nitidez e medida em px reais),
+            # mas repassa a escala para o tamanho do rosto ser medido no
+            # espaço de deteccao, e nao no da imagem original.
+            dicionario["qualidade"] = avaliar_qualidade(
+                imagem,
+                {"bbox": bbox_original, "score": score, "escala": escala},
+                nitidez_minima=nitidez_minima,
+            )
         else:
             dicionario["qualidade"] = (True, "ok")
 

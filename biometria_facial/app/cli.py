@@ -74,8 +74,15 @@ def comando_cadastrar(args):
         nome_arquivo = os.path.basename(caminho)
         try:
             imagem = capture.carregar_imagem(caminho)
+
+            # No cadastro usamos um limiar de nitidez mais brando que o da
+            # autenticacao (config.MIN_SHARPNESS_CADASTRO). O motivo: no
+            # cadastro a pessoa ainda pode refazer a foto, mas perder 5 fotos
+            # por um filtro rigido e pior do que aceitar uma foto mediana.
             embedding, detalhes = embedder.gerar_embedding_com_deteccao(
-                imagem, exigir_qualidade=True
+                imagem,
+                exigir_qualidade=not args.estrito,
+                nitidez_minima=config.MIN_SHARPNESS_CADASTRO,
             )
 
             if embedding is None:
@@ -86,7 +93,8 @@ def comando_cadastrar(args):
             ok, msg = database.adicionar_embedding(id_usuario, embedding)
             if ok:
                 gravados += 1
-                print(f"  [OK] {nome_arquivo}  confianca={detalhes['score']:.2f}")
+                aviso = f"  (aviso: {detalhes['aviso']})" if detalhes.get("aviso") else ""
+                print(f"  [OK] {nome_arquivo}  confianca={detalhes['score']:.2f}{aviso}")
             else:
                 falhas.append((nome_arquivo, msg))
                 print(f"  [X] {nome_arquivo}: {msg}")
@@ -241,6 +249,9 @@ def construir_parser():
     p_cad.add_argument("--nivel", type=int, required=True, choices=[1, 2, 3],
                        help="Nivel de acesso do usuario")
     p_cad.add_argument("--fotos", help="Pasta (ou arquivo) com as fotos de cadastro")
+    p_cad.add_argument("--estrito", action="store_true",
+                       help="Exige o filtro de qualidade cheio. Sem isso, uma foto "
+                            "reprovada apenas na nitidez ainda e aceita, com aviso.")
     p_cad.set_defaults(funcao=comando_cadastrar)
 
     # listar

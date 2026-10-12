@@ -13,6 +13,7 @@ ele e gravado criptografado e NUNCA as fotos sao armazenadas.
 import os
 
 import cv2
+import numpy as np
 
 from app import config
 from app import detector
@@ -37,7 +38,7 @@ def _inicializar():
             "'opencv-contrib-python'.\n"
             "Solucao:\n"
             "  pip uninstall -y opencv-python opencv-contrib-python\n"
-            "  pip install opencv-contrib-python==4.12.0.88"
+            "  pip install opencv-contrib-python==4.10.0.84"
         )
 
     if not os.path.exists(config.SFACE_MODEL):
@@ -52,7 +53,13 @@ def _inicializar():
 
 def gerar_embedding_da_imagem(imagem):
     """
-    Recebe uma imagem BGR (com um rosto) e devolve o embedding (numpy array).
+    Recebe uma imagem BGR (com um rosto) e devolve o embedding.
+
+    IMPORTANTE: o SFace devolve o vetor no shape (1, 128), ou seja, uma
+    linha dentro de uma matriz. A gente achata para (128,), porque o
+    np.dot() usado na distancia cosseno exige vetores 1D. Sem isso,
+    a comparacao quebra com "shapes not aligned".
+
     Devolve None se nao for possivel extrair o embedding.
     """
     if imagem is None:
@@ -67,25 +74,46 @@ def gerar_embedding_da_imagem(imagem):
         print(f"[embedder] erro ao extrair embedding: {erro}")
         return None
 
+    # Achata (1, 128) -> (128,)
+    embedding = np.asarray(embedding).reshape(-1)
+
+    if embedding.size != config.EMBEDDING_SIZE:
+        print(
+            f"[embedder] embedding com tamanho inesperado: "
+            f"{embedding.size} (esperado {config.EMBEDDING_SIZE})"
+        )
+        return None
+
     return embedding
 
 
-def gerar_embedding_com_deteccao(imagem, exigir_qualidade=True):
+def gerar_embedding_com_deteccao(imagem, exigir_qualidade=True, nitidez_minima=None):
     """
     Pipeline completo: detecta o melhor rosto, alinha e gera o embedding.
 
     Devolve sempre a tupla (embedding, detalhes).
     'embedding' e None quando nao deu para extrair;
     'detalhes["erro"]' traz a explicacao pronta para mostrar ao usuario.
+
+    exigir_qualidade: se False, aceita o rosto mesmo reprovado no filtro,
+    desde que o YuNet tenha detectado algum.
+
+    nitidez_minima: repassa o limiar de nitidez para o filtro. O cadastro
+    usa config.MIN_SHARPNESS_CADASTRO, mais brando que a autenticacao.
     """
     detalhes = {
         "embedding": None,
         "bbox": None,
         "score": None,
         "erro": None,
+        "aviso": None,
     }
 
-    rostos = detector.detectar_rostos(imagem, aplicar_filtro_qualidade=True)
+    rostos = detector.detectar_rostos(
+        imagem,
+        aplicar_filtro_qualidade=True,
+        nitidez_minima=nitidez_minima,
+    )
     if not rostos:
         detalhes["erro"] = "Nenhum rosto foi detectado na imagem."
         return None, detalhes
@@ -102,6 +130,12 @@ def gerar_embedding_com_deteccao(imagem, exigir_qualidade=True):
         motivos = ", ".join(r["qualidade"][1] for r in rostos[:3])
         detalhes["erro"] = f"Os rostos detectados nao servem para biometria: {motivos}"
         return None, detalhes
+
+    # Guardamos o motivo da reprovacao como aviso. O rosto ainda pode ser
+    # usado se exigir_qualidade for False: e melhor cadastrar uma foto
+    # mediana com aviso do que impedir a pessoa de se cadastrar.
+    if not escolhido["qualidade"][0]:
+        detalhes["aviso"] = escolhido["qualidade"][1]
 
     alinhado = detector.alinhar_rosto(imagem, escolhido)
     if alinhado is None or alinhado.size == 0:

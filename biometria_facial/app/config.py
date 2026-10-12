@@ -37,10 +37,31 @@ YUNET_TOP_K = 5000
 DETECT_MAX_SIDE = 640
 
 # --- Qualidade mínima da imagem (filtro de fotos ruins) ---
-# YuNet só detecta rostos entre ~10x10 e ~300x300 px.
-MIN_FACE_SIZE = 60          # lado menor do rosto, em px
-MAX_FACE_SIZE = 400         # lado maior do rosto, em px
-MIN_SHARPNESS = 60.0        # variância do Laplaciano: abaixo disso a foto está borrada
+# Tamanho do rosto, medido NA IMAGEM QUE O Yunet VÊ (a imagem reduzida),
+# e não na imagem original. Medir na original reprovaria selfies tirados com
+# câmera boa e aceitaria as mesmas fotos se o usuário reduzisse a resolução.
+# Ver detector.avaliar_qualidade.
+MIN_FACE_SIZE = 40          # lado menor do rosto, em px (na imagem de detecção)
+MAX_FACE_SIZE = 400         # lado maior do rosto, em px (na imagem de detecção)
+
+# Nitidez mínima: variância do Laplaciano no recorte do rosto.
+# O Laplaciano realça mudanças de brilho; em foto nítida há muitos
+# (olhos, sobrancelhas, borda do rosto) e a variância é alta.
+#
+# Estes valores foram MEDIDOS com scripts/diagnostico.py nas fotos de teste do
+# grupo. Ver APS_RESUMO.md para a tabela com os números reais.
+#
+# ATENÇÃO: nitidez depende de resolução e de iluminação. Foto em baixa luz
+# tem menos detalhe e pontua mais baixo mesmo estando em foco. Sempre meça
+# antes de mudar o número:
+#   python scripts/diagnostico.py data/<usuario>
+MIN_SHARPNESS = 20.0
+
+# Nitidez mínima no cadastro. Mais branda de propósito: no cadastro é melhor
+# aceitar e avisar do que obrigar a pessoa a refazer 5 fotos. Na
+# autenticação o filtro vale mais, porque uma foto ruim já está no banco e
+# não pode mais ser corrigida.
+MIN_SHARPNESS_CADASTRO = 8.0
 
 # --- Parâmetros do reconhecedor SFace ---
 EMBEDDING_SIZE = 128        # dimensão do vetor gerado pelo SFace

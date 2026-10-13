@@ -75,12 +75,20 @@ NIVEL_MINISTRO = 3
 # Limiar de distância cosseno por nível do RECURSO protegido.
 # Distâncias pequenas = mais parecidos. O nível 3 é mais rígido
 # (limiar menor), pois um falso positivo ali é mais grave.
-# Esses valores são um ponto de partida; a Fase 4 (evaluate.py)
-# calcula os limiares reais a partir das fotos de teste.
+#
+# Estes valores foram medidos com scripts/matriz_distancias.py nas fotos do
+# grupo. Com as fotos atuais, o intervalo em que o sistema nao erra e
+# (0.33, 0.52). Os limiares ficam dentro dele, com margem nos dois lados:
+# o nível 1 e o mais folgado (risco baixo, tolera mais erro) e o nível 3
+# o mais apertado (dado mais sensivel, tolera menos).
+#
+# ATENCAO: se as fotos forem refeitas, estes numeros mudam. Rodar
+#   python scripts/matriz_distancias.py
+# e conferir o intervalo antes de apresentar o trabalho.
 LIMIAR_DISTANCIA = {
-    NIVEL_TODOS: 0.65,       # nível 1 não exige biometria, mas o valor é usado como fallback
-    NIVEL_DIRETOR: 0.45,
-    NIVEL_MINISTRO: 0.32,
+    NIVEL_TODOS: 0.45,       # nível 1 não exige biometria, mas o valor é usado como fallback
+    NIVEL_DIRETOR: 0.42,
+    NIVEL_MINISTRO: 0.38,
 }
 
 # Quantas fotos o usuário precisa fornecer no cadastro.

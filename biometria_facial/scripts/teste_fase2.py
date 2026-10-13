@@ -97,12 +97,36 @@ def main():
 
         if linha:
             bruto = linha["embedding"]
-            # Se estivesse em texto puro, os bytes flutuantes nao seriam legiveis
-            # como utf-8. Como blob cifrado do Fernet, sempre comeca com 0x80.
-            comecou_com_token = bruto[:1] == b"\x80"
-            checar("embedding gravado esta CIFRADO (blob Fernet)",
-                   comecou_com_token,
-                   f"primeiro byte = {bruto[:1].hex()} (esperado 80)")
+
+            # O Fernet devolve o token em BASE64, nao bytes crus. Todo token
+            # valido comeca com "gAAA" (o 'g' e a versao 0x80 codificada).
+            # Checar b"\x80" estaria errado: esse e o byte ANTES da codificacao.
+            parece_fernet = bruto.startswith(b"gAAA")
+
+            # Teste mais forte: os bytes NAO podem ser os floats do embedding.
+            # Um embedding de 128 floats ocupa 512 bytes. Se estivesse gravado
+            # sem criptografia, teriamos bytes binarios de tamanho ~512.
+            # Como token Fernet, o tamanho e bem diferente (base64 + IV + HMAC).
+            import numpy as np
+
+            try:
+                como_floats = np.frombuffer(bruto, dtype=np.float32)
+                # Se decodificar como float32 com o tamanho esperado, e sinal
+                # forte de que esta em texto puro. Um blob cifrado tem tamanho
+                # que nao divide exatamente em floats de 4 bytes.
+                parece_texto_puro = como_floats.size == config.EMBEDDING_SIZE
+            except Exception:  # noqa: BLE001
+                parece_texto_puro = False
+
+            checar("embedding gravado esta CIFRADO (token Fernet)",
+                   parece_fernet,
+                   f"inicio = {bruto[:8]!r} (esperado b'gAAA...')")
+
+            checar("embedding NAO esta em texto puro",
+                   not parece_texto_puro,
+                   f"{len(bruto)} bytes no banco; "
+                   f"{config.EMBEDDING_SIZE} floats ocupariam "
+                   f"{config.EMBEDDING_SIZE * 4} bytes")
 
             # E precisa conseguir decifrar de volta
             try:

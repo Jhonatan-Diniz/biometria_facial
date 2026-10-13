@@ -76,19 +76,51 @@ NIVEL_MINISTRO = 3
 # Distâncias pequenas = mais parecidos. O nível 3 é mais rígido
 # (limiar menor), pois um falso positivo ali é mais grave.
 #
-# Estes valores foram medidos com scripts/matriz_distancias.py nas fotos do
-# grupo. Com as fotos atuais, o intervalo em que o sistema nao erra e
-# (0.33, 0.52). Os limiares ficam dentro dele, com margem nos dois lados:
-# o nível 1 e o mais folgado (risco baixo, tolera mais erro) e o nível 3
-# o mais apertado (dado mais sensivel, tolera menos).
+# COMO ESCOLHER ESTES NUMEROS (leia antes de mexer):
 #
-# ATENCAO: se as fotos forem refeitas, estes numeros mudam. Rodar
+# O criterio NAO e comparar fotos de cadastro entre si. Fotos de cadastro
+# foram tiradas na mesma sessao, com a mesma luz e a mesma postura, e por
+# isso dao distancias otimistas. O cenario real e o oposto: a pessoa se
+# cadastra hoje e aparece amanha com uma foto nova, de outra luz e outra
+# postura. A distancia sobe, e e por isso que um limiar calibrado no
+# cadastro falha na hora da prova.
+#
+# Por isso o limiar se calibra pelo teste HOLD-OUT, que remove uma foto da
+# galeria e a usa como se fosse a prova de amanha:
+#
 #   python scripts/matriz_distancias.py
-# e conferir o intervalo antes de apresentar o trabalho.
+#
+# O limiar deve ficar entre:
+#   - a maior distancia hold-out genuina (foto nova legitima sendo negada)
+#   - a menor distancia de impostora (pessoa errada entrando)
+#
+# Se esses dois se cruzam, nao existe limiar perfeito e o problema sao as
+# fotos: mais luz, mais nitidez e mais variacao de pose na captura.
+#
+# NOTA sobre multi-template: o login usa a MENOR distancia contra N amostras.
+# Isso reduz falso negativo, mas TAMBEM reduz a distancia minima de uma
+# impostora. Cadastrar mais fotos abre um pouco mais de risco de intruso.
+# E uma troca real, nao um ganho gratuito.
+# RESULTADO DA CALIBRACAO COM AS FOTOS ATUAIS (medido em 2026-10):
+#
+#   hold-out genuino (foto nova):  9 de 12 reconhecidas (75%)
+#   pior impostora:                0.5173
+#
+# As tres fotos que falham no hold-out dao 0.5199, 0.5012 e 0.5241 -- ou
+# seja, elas CAEM ACIMA da pior impostora. Nao existe limiar perfeito com
+# este conjunto: afrouxar o suficiente para aceitar todas as genuinas
+# (>=0.53) faria a impostora entrar junto.
+#
+# Os limiares abaixo foram escolhidos para PRIORIZAR A SEGURANCA: ficam
+# abaixo de 0.5173, entao nenhuma impostora entra. O preco e o falso
+# negativo -- as fotos de prova mais dificeis sao negadas.
+#
+# Em controle de acesso, negar o legitimo e um erro; deixar o intruso entrar
+# e o erro grave. Por isso a escolha.
 LIMIAR_DISTANCIA = {
-    NIVEL_TODOS: 0.45,       # nível 1 não exige biometria, mas o valor é usado como fallback
-    NIVEL_DIRETOR: 0.42,
-    NIVEL_MINISTRO: 0.38,
+    NIVEL_TODOS: 0.50,       # nivel 1 nao exige biometria; valor e fallback
+    NIVEL_DIRETOR: 0.48,
+    NIVEL_MINISTRO: 0.45,
 }
 
 # Quantas fotos o usuário precisa fornecer no cadastro.

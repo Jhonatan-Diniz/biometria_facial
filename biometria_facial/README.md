@@ -144,6 +144,47 @@ embedding ruim entre no banco.
 Esses valores são ponto de partida; a Fase 4 calcula os reais a partir
 das fotos do grupo.
 
+## Resultados medidos (fotos do grupo, 3 pessoas × ~5 fotos)
+
+Medido com `scripts/matriz_distancias.py`, que faz teste **hold-out**:
+remove uma foto da galeria e a usa como se fosse a foto de prova do dia
+seguinte. Isso importa porque comparar fotos de cadastro entre si subestima
+a distância real — elas foram tiradas na mesma sessão, com a mesma luz.
+
+| Métrica | Valor |
+|---------|-------|
+| Reconhecimento de foto **nova** (hold-out) | 9/12 — **75%** |
+| Pior impostora (pessoa errada) | 0.5173 |
+| Limiar nível 2 / 3 | 0.48 / 0.45 |
+
+**Por que 75% e não 100%.** Três fotos de prova deram 0.5199, 0.5012 e
+0.5241 — acima da pior impostora. Não existe limiar que aceite essas três
+e ainda barre a impostora: subir o limiar para ~0.53 resolve o falso
+negativo, mas deixa a pessoa errada entrar.
+
+Os limiares foram escolhidos para **priorizar a segurança**: ficam abaixo
+de 0.5173, então nenhuma impostora entra. O preço é o falso negativo — as
+fotos de prova mais difíceis são negadas.
+
+Em controle de acesso, negar o legítimo é um erro annoyance; deixar o
+intruso entrar é o erro grave. Daí a escolha.
+
+### Limitação principal
+
+A causa é a qualidade da captura, não o código. As fotos de teste têm
+nitidez entre 9 e 54 (medida por `scripts/diagnostico.py`) e brilho médio
+de 96/255. Rosto com pouco detalhe produz embedding instável, e o
+resultado são dois "modos" de distância: 0.15–0.43 e 0.50–0.52.
+
+**Como melhorar**, se houver tempo antes da apresentação:
+
+1. **Luz de janela ou luminária** frontal. É o fator de maior impacto.
+2. **Variar a pose** ~15° para esquerda e direita entre as fotos.
+3. **Mais pessoas** no teste (5 em vez de 3): afunila as duas distribuições
+   e deixa o limiar confiável.
+
+Nenhuma dessas mudanças altera código — apenas os dados de entrada.
+
 ## Limitações conhecidas
 
 - Ainda não há banco de dados nem cadastro (Fase 2).

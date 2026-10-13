@@ -109,6 +109,115 @@ def distancias_impostoras(embeddings):
     return resultados
 
 
+def analise_holdout(embeddings, gen_limiar):
+    """
+    Simulacao realista: uma foto que NAO esta no cadastro.
+
+    Este e o cenario do dia da prova. A pessoa se cadastra hoje e
+    aparece amanha com uma foto nova, de outra luz, outra postura.
+
+    Para cada foto, remove-a da galeria e a usa como prova. A distancia
+    calculada e contra a galeria restante, que e o que o login faz.
+
+    Por que isso importa: comparar fotos de cadastro entre si subestima a
+    distancia real, porque elas foram tiradas na mesma sessao, com a mesma
+    luz e a mesma postura. A prova de amanha sera diferente.
+    """
+    """
+    Simulacao realista: uma foto que NAO esta no cadastro.
+
+    Este e o cenario do dia da prova. A pessoa se cadastra hoje e
+    aparece amanha com uma foto nova, de outra luz, outra postura.
+
+    Para cada foto, remove-a da galeria e a usa como prova. A distancia
+    calculada e contra a galeria restante, que e o que o login faz.
+
+    Por que isso importa: comparar fotos de cadastro entre si subestima a
+    distancia real, porque elas foram tiradas na mesma sessao, com a mesma
+    luz e a mesma postura. A prova de amanha sera diferente.
+    """
+    pessoas = sorted(embeddings)
+    print("\n" + "=" * 70)
+    print(f"HOLD-OUT: foto de prova FORA do cadastro (limiar {gen_limiar:.2f})")
+    print("=" * 70)
+    print(f"  {'usuario':<12}{'foto':<16}{'melhor':<10}{'resultado'}")
+    print(f"  {'-' * 58}")
+
+    acertos = 0
+    total = 0
+
+    for pessoa in pessoas:
+        # embeddings[pessoa] e um DICIONARIO {nome_da_foto: embedding}.
+        # Iterar direto sobre ele devolveria os NOMES dos arquivos, e o
+        # distancia_cosseno receberia uma string no lugar do vetor.
+        nomes = list(embeddings[pessoa])
+        for nome_prova in nomes:
+            galeria = [
+                embeddings[pessoa][n]
+                for n in nomes
+                if n != nome_prova
+            ]
+            if not galeria:
+                continue
+
+            probe = embeddings[pessoa][nome_prova]
+            melhor = min(matcher.distancia_cosseno(probe, g) for g in galeria)
+
+            passou = melhor <= gen_limiar
+            total += 1
+            acertos += passou
+
+            marca = "reconhece" if passou else "NEGA"
+            print(f"  {pessoa:<12}{nome_prova:<16}{melhor:<10.4f}{marca}")
+
+    if total:
+        taxa = 100.0 * acertos / total
+        print(f"\n  reconheceu {acertos}/{total} fotos novas ({taxa:.0f}%)")
+        if taxa < 100:
+            print("  Este e o numero que importa: e a taxa de falso negativo")
+            print("  que o professor vai ver na demonstracao.")
+    print()
+
+    return acertos, total
+
+
+def analise_holdout_impostor(embeddings, gen_limiar):
+    """
+    O outro lado do hold-out: uma impostora tries entrar usando a
+    melhor foto disponivel dela. Compara-se com a galeria de cada pessoa.
+
+    Este e o falso positivo, que e o erro grave em controle de acesso.
+    """
+    pessoas = sorted(embeddings)
+    entradas = 0
+    total = 0
+
+    for pessoa in pessoas:
+        # embeddings[pessoa] e um DICIONARIO {nome_da_foto: embedding}.
+        # Iterar direto sobre ele devolveria os NOMES dos arquivos, e o
+        # distancia_cosseno receberia uma string no lugar do vetor.
+        galeria = list(embeddings[pessoa].values())
+        if not galeria:
+            continue
+
+        for impostora in pessoas:
+            if impostora == pessoa:
+                continue
+            # A impostora tenta com cada foto que ela tem
+            for probe in embeddings[impostora].values():
+                melhor = min(matcher.distancia_cosseno(probe, g) for g in galeria)
+                total += 1
+                if melhor <= gen_limiar:
+                    entradas += 1
+
+    if total:
+        print(f"  impostoras barradas: {total - entradas}/{total} "
+              f"({100.0 * (total - entradas) / total:.0f}%)")
+        if entradas:
+            print(f"  [FALHA DE SEGURANCA] {entradas} impostoras entrariam!")
+    return entradas, total
+
+
 def melhor_limiar(embeddings):
     """
     Calcula o intervalo de limiares em que o sistema nao erra, usando o
@@ -456,7 +565,12 @@ def main():
     # ---- Simulacao do login real ----
     if len(embeddings) >= 2:
         for nivel in sorted(config.LIMIAR_DISTANCIA):
-            analise_multi_template(embeddings, config.LIMIAR_DISTANCIA[nivel])
+            valor = config.LIMIAR_DISTANCIA[nivel]
+            print()
+            analise_multi_template(embeddings, valor)
+            analise_holdout(embeddings, valor)
+            print("  seguranca (impostora usando a melhor foto dela):")
+            analise_holdout_impostor(embeddings, valor)
 
     # ---- Lista detalhada ----
     if args.detalhe:

@@ -48,9 +48,20 @@ def capturar_da_webcam(indice_camera=0, tempo_maximo_s=10):
     """
     camera = cv2.VideoCapture(indice_camera)
     if not camera.isOpened():
+        camera.release()
         raise ValueError(
-            "Nao foi possivel abrir a webcam. "
-            "Verifique se a camera esta conectada e se o indice esta correto."
+            f"Nao foi possivel abrir a webcam no indice {indice_camera}.\n"
+            "Diagnostique antes de tentar de novo:\n"
+            "  python scripts/diagnostico_webcam.py\n"
+            "\n"
+            "Causas comuns:\n"
+            "  - Se voce esta no WSL: o WSL2 nao ve webcam sem o usbipd-win.\n"
+            "    O script de diagnostico explica o passo a passo.\n"
+            "  - A camera esta ocupada por outro programa (Zoom, Meet, navegador).\n"
+            "  - A camera esta desligada pelo botao do teclado.\n"
+            "  - A imagem abre mas fica preta: driver ou permissao do Windows.\n"
+            "\n"
+            "Alternativa que funciona sempre: use um arquivo de video."
         )
 
     print("\n=== WEBCAM ===")
@@ -61,10 +72,24 @@ def capturar_da_webcam(indice_camera=0, tempo_maximo_s=10):
     imagem = None
     inicio = cv2.getTickCount()
 
+    frames_sem_ler = 0
+
     while True:
         ok, frame = camera.read()
-        if not ok:
-            break
+
+        if not ok or frame is None:
+            # Algumas cameras "abrem" mas nunca entregam quadro. Contamos
+            # para dar uma mensagem util em vez de encerrar em silencio.
+            frames_sem_ler += 1
+            if frames_sem_ler > 30:
+                print("\n[A webcam abriu mas nao entregou nenhum frame em 30 tentativas.]")
+                print("Causa provavel: a camera esta ocupada por outro programa,")
+                print("ou o driver nao funciona no WSL. Diagnostique com:")
+                print("  python scripts/diagnostico_webcam.py")
+                break
+            continue
+
+        frames_sem_ler = 0
 
         # Espelha para ficar com cara de espelho (mais natural para o usuario)
         frame_mirror = cv2.flip(frame, 1)
@@ -97,7 +122,11 @@ def capturar_da_webcam(indice_camera=0, tempo_maximo_s=10):
     cv2.destroyAllWindows()
 
     if imagem is None:
-        raise ValueError("Nenhuma foto foi capturada.")
+        raise ValueError(
+            "Nenhuma foto foi capturada. Se a janela chegou a abrir e voce "
+            "apertou ESPACO, o problema e outro: confira se o rosto estava "
+            "visivel e dentro do quadro."
+        )
 
     return imagem
 

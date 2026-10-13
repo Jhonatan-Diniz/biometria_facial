@@ -1,6 +1,6 @@
 import sys
 
-from app import cli
+from app import gui
 
 if __name__ == "__main__":
-    sys.exit(cli.main())
+    sys.exit(gui.main())

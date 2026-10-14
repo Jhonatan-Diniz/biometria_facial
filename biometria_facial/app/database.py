@@ -225,6 +225,27 @@ def buscar_usuario(id_usuario):
     return dict(linha) if linha else None
 
 
+def alterar_nivel_usuario(id_usuario, nivel):
+    """Atualiza o nível de acesso de um usuário cadastrado."""
+    id_usuario = normalizar_id(id_usuario)
+    if nivel not in (config.NIVEL_TODOS, config.NIVEL_DIRETOR, config.NIVEL_MINISTRO):
+        return False, f"Nivel invalido: {nivel}. Use 1, 2 ou 3."
+
+    conexao = conectar()
+    try:
+        cursor = conexao.execute(
+            "UPDATE users SET nivel = ? WHERE id = ?",
+            (nivel, id_usuario),
+        )
+        if cursor.rowcount == 0:
+            return False, f"Usuario '{id_usuario}' nao encontrado."
+        conexao.commit()
+    finally:
+        conexao.close()
+
+    return True, f"Nivel do usuario '{id_usuario}' atualizado para {nivel}."
+
+
 def listar_usuarios():
     """
     Devolve a lista de usuarios, com a contagem de embeddings de cada um.

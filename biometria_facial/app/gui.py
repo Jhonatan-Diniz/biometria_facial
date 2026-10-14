@@ -29,8 +29,8 @@ class BiometriaApp(tk.Tk):
         audit.configurar()
 
         self.title("Biometria Facial | Controle de acesso")
-        self.geometry("1040x720")
-        self.minsize(900, 640)
+        self.geometry("1120x760")
+        self.minsize(940, 680)
         self.configure(bg="#f3f6f4")
 
         self._fila = queue.Queue()
@@ -49,34 +49,73 @@ class BiometriaApp(tk.Tk):
     def _configurar_estilo(self):
         estilo = ttk.Style(self)
         estilo.theme_use("clam")
-        estilo.configure("TFrame", background="#f3f6f4")
+        estilo.configure("TFrame", background="#f2f5f3")
         estilo.configure("Card.TFrame", background="#ffffff")
-        estilo.configure("TLabel", background="#f3f6f4", foreground="#22332b", font=("Segoe UI", 10))
-        estilo.configure("Card.TLabel", background="#ffffff", foreground="#22332b", font=("Segoe UI", 10))
+        estilo.configure("Header.TFrame", background="#123d2b")
+        estilo.configure("HeaderBrand.TLabel", background="#123d2b", foreground="#ffffff",
+                         font=("Segoe UI", 20, "bold"))
+        estilo.configure("HeaderSubtitle.TLabel", background="#123d2b", foreground="#c5d8cc",
+                         font=("Segoe UI", 10))
+        estilo.configure("HeaderBadge.TLabel", background="#20543b", foreground="#e5f5ea",
+                         font=("Segoe UI", 9, "bold"), padding=(12, 7))
+        estilo.configure("TLabel", background="#f2f5f3", foreground="#20332a", font=("Segoe UI", 10))
+        estilo.configure("Field.TLabel", background="#ffffff", foreground="#30473a",
+                         font=("Segoe UI", 9, "bold"))
+        estilo.configure("Card.TLabel", background="#ffffff", foreground="#20332a", font=("Segoe UI", 10))
         estilo.configure("Title.TLabel", font=("Segoe UI", 21, "bold"), foreground="#173d2b")
-        estilo.configure("Subtitle.TLabel", foreground="#627269", font=("Segoe UI", 10))
-        estilo.configure("CardTitle.TLabel", background="#ffffff", font=("Segoe UI", 13, "bold"))
-        estilo.configure("CardText.TLabel", background="#ffffff", foreground="#5c6b63")
-        estilo.configure("TButton", font=("Segoe UI", 10), padding=(12, 8))
-        estilo.configure("Primary.TButton", background="#167345", foreground="#ffffff")
+        estilo.configure("Subtitle.TLabel", foreground="#64746b", font=("Segoe UI", 10))
+        estilo.configure("CardTitle.TLabel", background="#ffffff", foreground="#183d2b",
+                         font=("Segoe UI", 14, "bold"))
+        estilo.configure("CardText.TLabel", background="#ffffff", foreground="#607067",
+                         font=("Segoe UI", 9))
+        estilo.configure("Section.TLabel", background="#f2f5f3", foreground="#183d2b",
+                         font=("Segoe UI", 15, "bold"))
+        estilo.configure("PanelTitle.TLabel", background="#e8f0eb", foreground="#214d36",
+                         font=("Segoe UI", 10, "bold"), padding=(10, 8))
+        estilo.configure("Level.TLabel", background="#ffffff", foreground="#20332a",
+                         font=("Segoe UI", 9))
+        estilo.configure("TButton", font=("Segoe UI", 9, "bold"), padding=(12, 9))
+        estilo.map("TButton", background=[("active", "#e7eee9")], foreground=[("disabled", "#89958d")])
+        estilo.configure("Primary.TButton", background="#167345", foreground="#ffffff",
+                         font=("Segoe UI", 10, "bold"), padding=(14, 11))
         estilo.map("Primary.TButton", background=[("active", "#105b36"), ("disabled", "#9caea3")])
-        estilo.configure("Treeview", rowheight=29, font=("Segoe UI", 9))
-        estilo.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"))
+        estilo.configure("Accent.TButton", background="#e6f0e9", foreground="#165d38")
+        estilo.map("Accent.TButton", background=[("active", "#d6e7dc")])
+        estilo.configure("TNotebook", background="#f2f5f3", borderwidth=0, tabmargins=(0, 0, 0, 0))
+        estilo.configure("TNotebook.Tab", background="#e5ebe7", foreground="#526259",
+                         font=("Segoe UI", 9, "bold"), padding=(18, 11))
+        estilo.map(
+            "TNotebook.Tab",
+            background=[("selected", "#ffffff"), ("active", "#dce8e0")],
+            foreground=[("selected", "#145d37"), ("active", "#173d2b")],
+        )
+        estilo.configure("Treeview", rowheight=34, font=("Segoe UI", 9),
+                         background="#ffffff", fieldbackground="#ffffff", foreground="#26382e")
+        estilo.configure("Treeview.Heading", background="#e8f0eb", foreground="#345241",
+                         font=("Segoe UI", 9, "bold"), padding=(8, 9))
+        estilo.map("Treeview", background=[("selected", "#d9ebdf")],
+                   foreground=[("selected", "#173d2b")])
         estilo.configure("ResultAllowed.TLabel", background="#e7f5ec", foreground="#145c34", padding=14)
         estilo.configure("ResultDenied.TLabel", background="#fff0ed", foreground="#8a2e20", padding=14)
 
     def _criar_interface(self):
-        topo = ttk.Frame(self, padding=(24, 18, 24, 12))
+        topo = ttk.Frame(self, style="Header.TFrame", padding=(28, 20, 28, 18))
         topo.pack(fill="x")
-        ttk.Label(topo, text="Biometria Facial", style="Title.TLabel").pack(anchor="w")
+        marca = ttk.Frame(topo, style="Header.TFrame")
+        marca.pack(fill="x")
+        ttk.Label(marca, text="BF", style="HeaderBadge.TLabel").pack(side="left", padx=(0, 14))
+        textos = ttk.Frame(marca, style="Header.TFrame")
+        textos.pack(side="left", fill="x", expand=True)
+        ttk.Label(textos, text="Biometria Facial", style="HeaderBrand.TLabel").pack(anchor="w")
         ttk.Label(
-            topo,
-            text="Cadastro de pessoas e verificação de acesso por nível",
-            style="Subtitle.TLabel",
-        ).pack(anchor="w", pady=(2, 0))
+            textos,
+            text="CONTROLE DE ACESSO  ·  IDENTIDADE E AUDITORIA",
+            style="HeaderSubtitle.TLabel",
+        ).pack(anchor="w", pady=(3, 0))
+        ttk.Label(marca, text="●  SISTEMA LOCAL", style="HeaderBadge.TLabel").pack(side="right")
 
         self.abas = ttk.Notebook(self)
-        self.abas.pack(fill="both", expand=True, padx=24, pady=(0, 12))
+        self.abas.pack(fill="both", expand=True, padx=24, pady=(18, 10))
 
         self.aba_acesso = ttk.Frame(self.abas, padding=20)
         self.aba_cadastro = ttk.Frame(self.abas, padding=20)
@@ -95,38 +134,46 @@ class BiometriaApp(tk.Tk):
 
         barra = ttk.Frame(self, padding=(24, 0, 24, 12))
         barra.pack(fill="x")
-        ttk.Separator(barra).pack(fill="x", pady=(0, 8))
+        ttk.Separator(barra).pack(fill="x", pady=(0, 9))
         self.status_var = tk.StringVar(value="Pronto")
-        ttk.Label(barra, textvariable=self.status_var, style="Subtitle.TLabel").pack(anchor="w")
+        status_row = ttk.Frame(barra)
+        status_row.pack(fill="x")
+        ttk.Label(status_row, text="●", foreground="#23804d").pack(side="left", padx=(0, 7))
+        ttk.Label(status_row, textvariable=self.status_var, style="Subtitle.TLabel").pack(side="left")
 
     def _criar_aba_acesso(self):
-        self.aba_acesso.columnconfigure(0, weight=1)
-        self.aba_acesso.rowconfigure(0, weight=1)
+        self.aba_acesso.columnconfigure(0, weight=3)
+        self.aba_acesso.columnconfigure(1, weight=2)
+        self.aba_acesso.rowconfigure(1, weight=1)
+        ttk.Label(self.aba_acesso, text="Verificação de acesso", style="Section.TLabel").grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=4, pady=(0, 12)
+        )
 
-        cartao = ttk.Frame(self.aba_acesso, style="Card.TFrame", padding=24)
-        cartao.grid(row=0, column=0, sticky="n", padx=70, pady=20)
+        cartao = ttk.Frame(self.aba_acesso, style="Card.TFrame", padding=22)
+        cartao.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
         cartao.columnconfigure(1, weight=1)
 
-        ttk.Label(cartao, text="Verificar acesso", style="CardTitle.TLabel").grid(
+        ttk.Label(cartao, text="Identifique-se", style="CardTitle.TLabel").grid(
             row=0, column=0, columnspan=3, sticky="w"
         )
         ttk.Label(
             cartao,
-            text="Informe o usuário e selecione o nível do recurso que deseja acessar.",
+            text="Informe seu ID e escolha o nível do recurso. Para os níveis 2 e 3, "
+                 "será necessário apresentar o rosto.",
             style="CardText.TLabel",
-            wraplength=560,
-        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 22))
+            wraplength=460,
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 18))
 
-        ttk.Label(cartao, text="ID do usuário", style="Card.TLabel").grid(
-            row=2, column=0, sticky="w", padx=(0, 16), pady=8
+        ttk.Label(cartao, text="ID DO USUÁRIO", style="Field.TLabel").grid(
+            row=2, column=0, sticky="w", padx=(0, 14), pady=8
         )
         self.login_id_var = tk.StringVar()
-        ttk.Entry(cartao, textvariable=self.login_id_var, width=34).grid(
-            row=2, column=1, columnspan=2, sticky="ew", pady=8
+        ttk.Entry(cartao, textvariable=self.login_id_var, width=34, font=("Segoe UI", 10)).grid(
+            row=2, column=1, columnspan=2, sticky="ew", pady=8, ipady=4
         )
 
-        ttk.Label(cartao, text="Nível do recurso", style="Card.TLabel").grid(
-            row=3, column=0, sticky="w", padx=(0, 16), pady=8
+        ttk.Label(cartao, text="NÍVEL DO RECURSO", style="Field.TLabel").grid(
+            row=3, column=0, sticky="w", padx=(0, 14), pady=8
         )
         self.login_nivel_var = tk.StringVar(value="2")
         ttk.Combobox(
@@ -135,41 +182,50 @@ class BiometriaApp(tk.Tk):
             values=("1", "2", "3"),
             state="readonly",
             width=31,
-        ).grid(row=3, column=1, columnspan=2, sticky="ew", pady=8)
+            font=("Segoe UI", 10),
+        ).grid(row=3, column=1, columnspan=2, sticky="ew", pady=8, ipady=3)
 
-        ttk.Label(cartao, text="Imagem / vídeo", style="Card.TLabel").grid(
-            row=4, column=0, sticky="w", padx=(0, 16), pady=8
+        ttk.Label(cartao, text="CAPTURA DO ROSTO", style="Field.TLabel").grid(
+            row=4, column=0, sticky="nw", padx=(0, 14), pady=(13, 8)
         )
         self.fonte_login_var = tk.StringVar(value="")
-        ttk.Entry(cartao, textvariable=self.fonte_login_var, state="readonly").grid(
-            row=4, column=1, sticky="ew", pady=8
+        self.fonte_login_entry = ttk.Entry(cartao, textvariable=self.fonte_login_var, state="readonly")
+        self.fonte_login_entry.grid(row=4, column=1, sticky="ew", pady=8)
+        self.botao_fonte = ttk.Button(
+            cartao, text="Escolher arquivo", style="Accent.TButton", command=self._selecionar_fonte_login
         )
-        ttk.Button(cartao, text="Selecionar", command=self._selecionar_fonte_login).grid(
+        self.botao_fonte.grid(
             row=4, column=2, padx=(8, 0), pady=8
         )
-        ttk.Button(cartao, text="Usar webcam", command=self._usar_webcam_login).grid(
+        self.botao_webcam = ttk.Button(
+            cartao, text="Usar webcam", command=self._usar_webcam_login
+        )
+        self.botao_webcam.grid(
             row=5, column=1, sticky="w", pady=(2, 8)
         )
-        ttk.Button(cartao, text="Limpar", command=self._limpar_fonte_login).grid(
+        self.botao_limpar_fonte = ttk.Button(
+            cartao, text="Limpar seleção", command=self._limpar_fonte_login
+        )
+        self.botao_limpar_fonte.grid(
             row=5, column=2, sticky="e", pady=(2, 8)
         )
 
-        ttk.Label(
+        self.orientacao_nivel = ttk.Label(
             cartao,
-            text="Nível 1 não exige reconhecimento facial. Para os níveis 2 e 3, "
-                 "selecione uma imagem/vídeo ou use a webcam.",
+            text="",
             style="CardText.TLabel",
-            wraplength=560,
-        ).grid(row=6, column=0, columnspan=3, sticky="w", pady=(8, 16))
+            wraplength=460,
+        )
+        self.orientacao_nivel.grid(row=6, column=0, columnspan=3, sticky="w", pady=(8, 12))
 
         self.resultado_acesso = ttk.Label(
             cartao,
-            text="O resultado da verificação aparecerá aqui.",
+            text="Após a verificação, o resultado será exibido aqui.",
             style="CardText.TLabel",
-            wraplength=560,
+            wraplength=460,
             justify="left",
         )
-        self.resultado_acesso.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(0, 14))
+        self.resultado_acesso.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(4, 12))
 
         botao = ttk.Button(
             cartao,
@@ -180,10 +236,54 @@ class BiometriaApp(tk.Tk):
         botao.grid(row=8, column=0, columnspan=3, sticky="ew")
         self._botoes_acao.append(botao)
 
+        guia = ttk.Frame(self.aba_acesso, style="Card.TFrame", padding=0)
+        guia.grid(row=1, column=1, sticky="nsew", padx=(10, 0))
+        ttk.Label(guia, text="  NÍVEIS DE ACESSO", style="PanelTitle.TLabel").pack(fill="x")
+        nivel_box = ttk.Frame(guia, style="Card.TFrame", padding=(16, 10))
+        nivel_box.pack(fill="x")
+        for numero, nome, descricao in (
+            ("1", "Público", "Acesso liberado sem biometria."),
+            ("2", "Diretoria", "Exige usuário com nível 2 ou 3 e rosto cadastrado."),
+            ("3", "Ministro", "Verificação facial com critério mais rigoroso."),
+        ):
+            linha = ttk.Frame(nivel_box, style="Card.TFrame")
+            linha.pack(fill="x", pady=8)
+            ttk.Label(
+                linha, text=numero, background="#e4f0e8", foreground="#17633a",
+                font=("Segoe UI", 11, "bold"), padding=(9, 5),
+            ).pack(side="left", anchor="n", padx=(0, 10))
+            descricao_frame = ttk.Frame(linha, style="Card.TFrame")
+            descricao_frame.pack(side="left", fill="x", expand=True)
+            ttk.Label(descricao_frame, text=nome, style="Card.TLabel",
+                      font=("Segoe UI", 9, "bold")).pack(anchor="w")
+            ttk.Label(descricao_frame, text=descricao, style="CardText.TLabel",
+                      wraplength=210, justify="left").pack(anchor="w", pady=(2, 0))
+            if numero != "3":
+                ttk.Separator(nivel_box).pack(fill="x", pady=(2, 4))
+
+        privacidade = ttk.Frame(guia, style="Card.TFrame", padding=(16, 10, 16, 16))
+        privacidade.pack(fill="x")
+        ttk.Separator(privacidade).pack(fill="x", pady=(0, 10))
+        ttk.Label(privacidade, text="PRIVACIDADE", style="Field.TLabel").pack(anchor="w")
+        ttk.Label(
+            privacidade,
+            text="As imagens são analisadas localmente. O sistema guarda apenas "
+                 "amostras faciais criptografadas e o registro das tentativas.",
+            style="CardText.TLabel",
+            wraplength=230,
+            justify="left",
+        ).pack(anchor="w", pady=(5, 0))
+
+        self.login_nivel_var.trace_add("write", lambda *_: self._atualizar_orientacao_nivel())
+        self._atualizar_orientacao_nivel()
+
     def _criar_aba_cadastro(self):
         self.aba_cadastro.columnconfigure(0, weight=1)
-        cartao = ttk.Frame(self.aba_cadastro, style="Card.TFrame", padding=24)
-        cartao.pack(fill="both", expand=True, padx=50, pady=12)
+        ttk.Label(self.aba_cadastro, text="Cadastro de usuário", style="Section.TLabel").pack(
+            anchor="w", padx=4, pady=(0, 12)
+        )
+        cartao = ttk.Frame(self.aba_cadastro, style="Card.TFrame", padding=22)
+        cartao.pack(fill="both", expand=True, padx=12, pady=(0, 8))
         cartao.columnconfigure(1, weight=1)
         cartao.rowconfigure(5, weight=1)
 
@@ -192,39 +292,44 @@ class BiometriaApp(tk.Tk):
         )
         ttk.Label(
             cartao,
-            text="As fotos são processadas para gerar embeddings criptografados; "
-                 "as imagens originais não são armazenadas.",
+            text="Preencha os dados e adicione fotos para habilitar o reconhecimento facial. "
+                 "As imagens originais não são armazenadas.",
             style="CardText.TLabel",
             wraplength=680,
         ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 16))
 
-        ttk.Label(cartao, text="ID", style="Card.TLabel").grid(row=2, column=0, sticky="w", pady=7)
+        ttk.Label(cartao, text="ID DO USUÁRIO", style="Field.TLabel").grid(row=2, column=0, sticky="w", pady=7)
         self.cadastro_id_var = tk.StringVar()
-        ttk.Entry(cartao, textvariable=self.cadastro_id_var).grid(
-            row=2, column=1, columnspan=2, sticky="ew", pady=7
+        ttk.Entry(cartao, textvariable=self.cadastro_id_var, font=("Segoe UI", 10)).grid(
+            row=2, column=1, columnspan=2, sticky="ew", pady=7, ipady=3
         )
 
-        ttk.Label(cartao, text="Nome", style="Card.TLabel").grid(row=3, column=0, sticky="w", pady=7)
+        ttk.Label(cartao, text="NOME COMPLETO", style="Field.TLabel").grid(row=3, column=0, sticky="w", pady=7)
         self.cadastro_nome_var = tk.StringVar()
-        ttk.Entry(cartao, textvariable=self.cadastro_nome_var).grid(
-            row=3, column=1, columnspan=2, sticky="ew", pady=7
+        ttk.Entry(cartao, textvariable=self.cadastro_nome_var, font=("Segoe UI", 10)).grid(
+            row=3, column=1, columnspan=2, sticky="ew", pady=7, ipady=3
         )
 
-        ttk.Label(cartao, text="Nível", style="Card.TLabel").grid(row=4, column=0, sticky="w", pady=7)
+        ttk.Label(cartao, text="NÍVEL DE ACESSO", style="Field.TLabel").grid(row=4, column=0, sticky="w", pady=7)
         self.cadastro_nivel_var = tk.StringVar(value="1")
         ttk.Combobox(
             cartao,
             textvariable=self.cadastro_nivel_var,
             values=("1", "2", "3"),
             state="readonly",
-        ).grid(row=4, column=1, columnspan=2, sticky="ew", pady=7)
+            font=("Segoe UI", 10),
+        ).grid(row=4, column=1, columnspan=2, sticky="ew", pady=7, ipady=3)
 
         linha_fotos = ttk.Frame(cartao, style="Card.TFrame")
         linha_fotos.grid(row=5, column=0, columnspan=3, sticky="nsew", pady=(12, 8))
         linha_fotos.columnconfigure(0, weight=1)
         linha_fotos.rowconfigure(1, weight=1)
-        ttk.Label(linha_fotos, text="Fotos de cadastro (recomendado: 3 a 5)", style="Card.TLabel").grid(
+        ttk.Label(linha_fotos, text="FOTOS FACIAIS  ·  recomendado: 3 a 5", style="Field.TLabel").grid(
             row=0, column=0, sticky="w", pady=(0, 6)
+        )
+        self.contagem_fotos_var = tk.StringVar(value="Nenhuma foto selecionada")
+        ttk.Label(linha_fotos, textvariable=self.contagem_fotos_var, style="CardText.TLabel").grid(
+            row=0, column=1, sticky="e", pady=(0, 6)
         )
 
         lista_frame = ttk.Frame(linha_fotos, style="Card.TFrame")
@@ -236,8 +341,13 @@ class BiometriaApp(tk.Tk):
             height=6,
             selectmode=tk.EXTENDED,
             font=("Segoe UI", 9),
-            relief="solid",
-            borderwidth=1,
+            relief="flat",
+            borderwidth=0,
+            background="#f5f8f6",
+            foreground="#31453a",
+            selectbackground="#d9ebdf",
+            selectforeground="#173d2b",
+            activestyle="none",
         )
         self.lista_fotos.grid(row=0, column=0, sticky="nsew")
         barra = ttk.Scrollbar(lista_frame, orient="vertical", command=self.lista_fotos.yview)
@@ -246,8 +356,17 @@ class BiometriaApp(tk.Tk):
 
         acoes_fotos = ttk.Frame(linha_fotos, style="Card.TFrame")
         acoes_fotos.grid(row=1, column=1, sticky="ns", padx=(10, 0))
-        ttk.Button(acoes_fotos, text="Adicionar fotos", command=self._adicionar_fotos).pack(fill="x", pady=(0, 8))
-        ttk.Button(acoes_fotos, text="Remover selecionadas", command=self._remover_fotos).pack(fill="x")
+        ttk.Button(acoes_fotos, text="+ Adicionar fotos", style="Accent.TButton",
+                   command=self._adicionar_fotos).pack(fill="x", pady=(0, 8))
+        ttk.Button(acoes_fotos, text="Remover selecionadas",
+                   command=self._remover_fotos).pack(fill="x")
+
+        ttk.Label(
+            linha_fotos,
+            text="Dica: varie levemente o ângulo e mantenha o rosto centralizado, nítido e bem iluminado.",
+            style="CardText.TLabel",
+            wraplength=620,
+        ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
         self.cadastro_resultado_var = tk.StringVar(value="")
         ttk.Label(
@@ -270,11 +389,30 @@ class BiometriaApp(tk.Tk):
         self.aba_usuarios.rowconfigure(1, weight=1)
         cabecalho = ttk.Frame(self.aba_usuarios)
         cabecalho.grid(row=0, column=0, sticky="ew", pady=(0, 12))
-        ttk.Label(cabecalho, text="Usuários cadastrados", style="CardTitle.TLabel").pack(side="left")
-        ttk.Button(cabecalho, text="Atualizar", command=self._atualizar_usuarios).pack(side="right")
+        ttk.Label(cabecalho, text="Usuários cadastrados", style="Section.TLabel").pack(side="left")
+        ttk.Button(cabecalho, text="Atualizar lista", command=self._atualizar_usuarios).pack(side="right")
+        self.botao_editar_nivel = ttk.Button(
+            cabecalho,
+            text="Alterar nível",
+            style="Accent.TButton",
+            command=self._alterar_nivel_selecionado,
+            state="disabled",
+        )
+        self.botao_editar_nivel.pack(side="right", padx=(0, 8))
+        self.botao_excluir_usuario = ttk.Button(
+            cabecalho,
+            text="Excluir usuário",
+            command=self._excluir_usuario_selecionado,
+            state="disabled",
+        )
+        self.botao_excluir_usuario.pack(side="right", padx=(0, 8))
 
+        tabela_card = ttk.Frame(self.aba_usuarios, style="Card.TFrame", padding=10)
+        tabela_card.grid(row=1, column=0, sticky="nsew")
+        tabela_card.columnconfigure(0, weight=1)
+        tabela_card.rowconfigure(0, weight=1)
         self.tabela_usuarios = ttk.Treeview(
-            self.aba_usuarios,
+            tabela_card,
             columns=("id", "nome", "nivel", "amostras"),
             show="headings",
         )
@@ -286,10 +424,14 @@ class BiometriaApp(tk.Tk):
         ):
             self.tabela_usuarios.heading(coluna, text=texto)
             self.tabela_usuarios.column(coluna, width=largura, anchor="w")
-        self.tabela_usuarios.grid(row=1, column=0, sticky="nsew")
-        barra = ttk.Scrollbar(self.aba_usuarios, orient="vertical", command=self.tabela_usuarios.yview)
-        barra.grid(row=1, column=1, sticky="ns")
+        self.tabela_usuarios.tag_configure("par", background="#f5f8f6")
+        self.tabela_usuarios.tag_configure("sem_amostras", foreground="#9b4a2b")
+        self.tabela_usuarios.grid(row=0, column=0, sticky="nsew")
+        barra = ttk.Scrollbar(tabela_card, orient="vertical", command=self.tabela_usuarios.yview)
+        barra.grid(row=0, column=1, sticky="ns")
         self.tabela_usuarios.configure(yscrollcommand=barra.set)
+        self.tabela_usuarios.bind("<<TreeviewSelect>>", self._ao_selecionar_usuario)
+        self.tabela_usuarios.bind("<Double-1>", self._editar_nivel_ao_duplo_clique)
 
     def _criar_aba_auditoria(self):
         self.aba_auditoria.columnconfigure(0, weight=1)
@@ -299,8 +441,12 @@ class BiometriaApp(tk.Tk):
         ttk.Label(cabecalho, text="Tentativas recentes", style="CardTitle.TLabel").pack(side="left")
         ttk.Button(cabecalho, text="Atualizar", command=self._atualizar_auditoria).pack(side="right")
 
+        tabela_card = ttk.Frame(self.aba_auditoria, style="Card.TFrame", padding=10)
+        tabela_card.grid(row=1, column=0, sticky="nsew")
+        tabela_card.columnconfigure(0, weight=1)
+        tabela_card.rowconfigure(0, weight=1)
         self.tabela_auditoria = ttk.Treeview(
-            self.aba_auditoria,
+            tabela_card,
             columns=("data", "usuario", "recurso", "origem", "distancia", "resultado"),
             show="headings",
         )
@@ -314,10 +460,38 @@ class BiometriaApp(tk.Tk):
         ):
             self.tabela_auditoria.heading(coluna, text=texto)
             self.tabela_auditoria.column(coluna, width=largura, anchor="w")
-        self.tabela_auditoria.grid(row=1, column=0, sticky="nsew")
-        barra = ttk.Scrollbar(self.aba_auditoria, orient="vertical", command=self.tabela_auditoria.yview)
-        barra.grid(row=1, column=1, sticky="ns")
+        self.tabela_auditoria.tag_configure("par", background="#f5f8f6")
+        self.tabela_auditoria.tag_configure("permitido", foreground="#17633a")
+        self.tabela_auditoria.tag_configure("negado", foreground="#9b3f32")
+        self.tabela_auditoria.grid(row=0, column=0, sticky="nsew")
+        barra = ttk.Scrollbar(tabela_card, orient="vertical", command=self.tabela_auditoria.yview)
+        barra.grid(row=0, column=1, sticky="ns")
         self.tabela_auditoria.configure(yscrollcommand=barra.set)
+
+    def _atualizar_orientacao_nivel(self):
+        nivel = self.login_nivel_var.get()
+        if nivel == "1":
+            self.orientacao_nivel.configure(
+                text="Nível 1 — acesso geral. Não é necessário apresentar o rosto."
+            )
+            estado = "disabled"
+        elif nivel == "3":
+            self.orientacao_nivel.configure(
+                text="Nível 3 — recurso restrito. Escolha uma imagem ou vídeo, ou use a webcam. "
+                     "O usuário precisa ter nível 3."
+            )
+            estado = "normal"
+        else:
+            self.orientacao_nivel.configure(
+                text="Nível 2 — escolha uma imagem ou vídeo, ou use a webcam. "
+                     "A câmera será aberta ao iniciar a verificação."
+            )
+            estado = "normal"
+
+        self.fonte_login_entry.configure(state="disabled" if estado == "disabled" else "readonly")
+        self.botao_fonte.configure(state=estado)
+        self.botao_webcam.configure(state=estado)
+        self.botao_limpar_fonte.configure(state=estado)
 
     def _selecionar_fonte_login(self):
         caminho = filedialog.askopenfilename(
@@ -345,12 +519,27 @@ class BiometriaApp(tk.Tk):
             if caminho not in self._fotos_cadastro:
                 self._fotos_cadastro.append(caminho)
                 self.lista_fotos.insert(tk.END, caminho)
+        self._atualizar_contagem_fotos()
 
     def _remover_fotos(self):
         selecionados = list(self.lista_fotos.curselection())
         for indice in reversed(selecionados):
             self.lista_fotos.delete(indice)
             del self._fotos_cadastro[indice]
+        self._atualizar_contagem_fotos()
+
+    def _atualizar_contagem_fotos(self):
+        quantidade = len(self._fotos_cadastro)
+        if quantidade == 0:
+            texto = "Nenhuma foto selecionada"
+        elif quantidade <= config.MAX_IMAGENS_CADASTRO:
+            texto = f"{quantidade} de {config.MAX_IMAGENS_CADASTRO} fotos selecionadas"
+        else:
+            texto = (
+                f"{quantidade} selecionadas — serão usadas apenas "
+                f"{config.MAX_IMAGENS_CADASTRO}"
+            )
+        self.contagem_fotos_var.set(texto)
 
     def _verificar_acesso(self):
         id_usuario = self.login_id_var.get().strip()
@@ -501,7 +690,12 @@ class BiometriaApp(tk.Tk):
             return
 
         self.tabela_usuarios.delete(*self.tabela_usuarios.get_children())
-        for usuario in usuarios:
+        for indice, usuario in enumerate(usuarios):
+            amostras = usuario["qtd_embeddings"]
+            rotulo_amostras = f"{amostras} amostra(s)" if amostras else "Sem amostras"
+            tags = ["par"] if indice % 2 == 0 else []
+            if not amostras:
+                tags.append("sem_amostras")
             self.tabela_usuarios.insert(
                 "",
                 tk.END,
@@ -509,9 +703,139 @@ class BiometriaApp(tk.Tk):
                     usuario["id"],
                     usuario["nome"],
                     usuario["nivel"],
-                    usuario["qtd_embeddings"],
+                    rotulo_amostras,
                 ),
+                tags=tuple(tags),
             )
+        self._ao_selecionar_usuario()
+
+    def _ao_selecionar_usuario(self, evento=None):
+        tabela = evento.widget if evento is not None else self.tabela_usuarios
+        selecionado = bool(tabela.selection())
+        estado = "normal" if selecionado else "disabled"
+        self.botao_editar_nivel.configure(state=estado)
+        self.botao_excluir_usuario.configure(state=estado)
+
+    def _editar_nivel_ao_duplo_clique(self, evento):
+        item = evento.widget.identify_row(evento.y)
+        if item:
+            evento.widget.selection_set(item)
+            self._alterar_nivel_selecionado()
+
+    def _usuario_selecionado(self):
+        selecionados = self.tabela_usuarios.selection()
+        if not selecionados:
+            messagebox.showinfo(
+                "Selecione um usuário",
+                "Clique em um usuário da lista para habilitar as ações.",
+                parent=self,
+            )
+            return None
+
+        valores = self.tabela_usuarios.item(selecionados[0], "values")
+        return {
+            "id": valores[0],
+            "nome": valores[1],
+            "nivel": int(valores[2]),
+        }
+
+    def _alterar_nivel_selecionado(self):
+        usuario = self._usuario_selecionado()
+        if usuario is None:
+            return
+
+        dialogo = tk.Toplevel(self)
+        dialogo.title("Alterar nível de acesso")
+        dialogo.transient(self)
+        dialogo.resizable(False, False)
+        dialogo.configure(bg="#f2f5f3")
+
+        conteudo = ttk.Frame(dialogo, padding=20)
+        conteudo.pack(fill="both", expand=True)
+        ttk.Label(conteudo, text="Alterar nível de acesso", style="CardTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            conteudo,
+            text=f"Usuário: {usuario['nome']}  (ID: {usuario['id']})",
+            style="Subtitle.TLabel",
+        ).pack(anchor="w", pady=(5, 14))
+
+        nivel_var = tk.StringVar(value=str(usuario["nivel"]))
+        seletor = ttk.Combobox(
+            conteudo,
+            textvariable=nivel_var,
+            values=("1", "2", "3"),
+            state="readonly",
+            width=34,
+        )
+        seletor.pack(fill="x")
+        ttk.Label(
+            conteudo,
+            text="1 — Público     2 — Diretoria     3 — Ministro",
+            style="Subtitle.TLabel",
+        ).pack(anchor="w", pady=(8, 16))
+
+        botoes = ttk.Frame(conteudo)
+        botoes.pack(fill="x")
+
+        def salvar():
+            try:
+                sucesso, mensagem = database.alterar_nivel_usuario(
+                    usuario["id"],
+                    int(nivel_var.get()),
+                )
+            except Exception as erro:  # noqa: BLE001
+                messagebox.showerror("Erro ao alterar nível", str(erro), parent=dialogo)
+                return
+
+            if not sucesso:
+                messagebox.showerror("Não foi possível alterar", mensagem, parent=dialogo)
+                return
+
+            dialogo.destroy()
+            self._atualizar_usuarios()
+            self.status_var.set(mensagem)
+
+        ttk.Button(botoes, text="Cancelar", command=dialogo.destroy).pack(side="right")
+        ttk.Button(botoes, text="Salvar alteração", style="Primary.TButton", command=salvar).pack(
+            side="right", padx=(0, 8)
+        )
+        dialogo.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() - dialogo.winfo_width()) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - dialogo.winfo_height()) // 2
+        dialogo.geometry(f"+{x}+{y}")
+        dialogo.grab_set()
+        seletor.focus_set()
+        self.wait_window(dialogo)
+
+    def _excluir_usuario_selecionado(self):
+        usuario = self._usuario_selecionado()
+        if usuario is None:
+            return
+
+        confirmar = messagebox.askyesno(
+            "Confirmar exclusão",
+            f"Excluir o usuário {usuario['nome']} (ID: {usuario['id']})?\n\n"
+            "As amostras faciais desse usuário também serão apagadas. "
+            "Os registros de auditoria serão mantidos.",
+            icon="warning",
+            parent=self,
+        )
+        if not confirmar:
+            return
+
+        try:
+            sucesso, mensagem = database.apagar_usuario(usuario["id"])
+        except Exception as erro:  # noqa: BLE001
+            messagebox.showerror("Erro ao excluir usuário", str(erro), parent=self)
+            return
+
+        if not sucesso:
+            messagebox.showerror("Não foi possível excluir", mensagem, parent=self)
+            return
+
+        self._atualizar_usuarios()
+        self._atualizar_auditoria()
+        self.status_var.set(mensagem)
 
     def _atualizar_auditoria(self):
         try:
@@ -521,12 +845,14 @@ class BiometriaApp(tk.Tk):
             return
 
         self.tabela_auditoria.delete(*self.tabela_auditoria.get_children())
-        for registro in registros:
+        for indice, registro in enumerate(registros):
             distancia = (
                 f"{registro['distancia']:.4f}"
                 if registro["distancia"] is not None
                 else "—"
             )
+            tags = ["par"] if indice % 2 == 0 else []
+            tags.append("permitido" if registro["resultado"] == "PERMITIDO" else "negado")
             self.tabela_auditoria.insert(
                 "",
                 tk.END,
@@ -538,6 +864,7 @@ class BiometriaApp(tk.Tk):
                     distancia,
                     registro["resultado"],
                 ),
+                tags=tuple(tags),
             )
 
     def _executar_em_segundo_plano(self, operacao, ao_concluir):

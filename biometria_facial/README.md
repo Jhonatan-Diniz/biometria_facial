@@ -14,6 +14,10 @@ restringir o acesso a uma rede simulada do Ministério do Meio Ambiente
 
 Regra: `nivel_usuario >= nivel_recurso` libera o acesso.
 
+Na aba **Usuários** da interface, selecione uma pessoa para alterar seu nível
+ou excluí-la. A exclusão remove também as amostras faciais, mas preserva os
+registros de auditoria.
+
 ## Estado atual
 
 **Fase 1 (núcleo) implementada.** Ainda não é o sistema completo: falta o

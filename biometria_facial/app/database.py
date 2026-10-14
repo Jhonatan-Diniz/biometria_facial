@@ -148,11 +148,157 @@ def criar_schema(conexao):
             origem     TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS rural_properties (
+            codigo                  TEXT PRIMARY KEY,
+            nome                    TEXT NOT NULL,
+            municipio               TEXT NOT NULL,
+            estado                  TEXT NOT NULL,
+            substancia              TEXT NOT NULL,
+            periodo_uso             TEXT NOT NULL,
+            situacao_monitoramento  TEXT NOT NULL,
+            prioridade              TEXT NOT NULL,
+            poco                    TEXT NOT NULL,
+            profundidade_poco_m     REAL NOT NULL,
+            concentracao_ug_l       REAL NOT NULL,
+            referencia_ug_l         REAL NOT NULL,
+            amostra_em              TEXT NOT NULL,
+            medida_resposta         TEXT NOT NULL,
+            nota_tecnica             TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_embeddings_user ON embeddings(user_id);
         CREATE INDEX IF NOT EXISTS idx_audit_data ON audit_log(data_hora);
         """
     )
+    criar_dados_ficticios(conexao)
     conexao.commit()
+
+
+def criar_dados_ficticios(conexao):
+    """Insere casos ambientais explicitamente fictícios, sem duplicá-los."""
+    propriedades = (
+        (
+            "SIM-001", "Fazenda Horizonte Verde", "Santa Aurora", "GO",
+            "Agroclor PX-17 (fictício)", "2021-2023",
+            "Sinal hipotético detectado", "Alta", "PO-SIM-01", 18.0, 0.42, 0.10,
+            "2026-08-12", "Poço isolado para avaliação",
+            "Cenário didático: possível infiltração após chuvas intensas.",
+        ),
+        (
+            "SIM-002", "Sítio Água Clara", "Vale das Nascentes", "MG",
+            "Herbiol Z-4 (fictício)", "2020-2022",
+            "Sinal hipotético detectado", "Média", "PO-SIM-02", 24.0, 0.18, 0.08,
+            "2026-08-18", "Nova coleta programada",
+            "Cenário didático: resultado requer repetição em laboratório.",
+        ),
+        (
+            "SIM-003", "Estância Ipê Roxo", "Campo Sereno", "MS",
+            "Inseticida Delta-Q (fictício)", "2019-2021",
+            "Monitoramento preventivo", "Baixa", "PO-SIM-03", 31.0, 0.04, 0.10,
+            "2026-08-21", "Monitoramento trimestral",
+            "Cenário didático: amostra abaixo do parâmetro de referência fictício.",
+        ),
+        (
+            "SIM-004", "Fazenda Três Riachos", "Santa Aurora", "GO",
+            "Agroclor PX-17 (fictício)", "2022-2024",
+            "Sinal hipotético detectado", "Alta", "PO-SIM-04", 16.0, 0.61, 0.10,
+            "2026-09-02", "Investigação prioritária",
+            "Cenário didático: poço próximo à área de aplicação simulada.",
+        ),
+        (
+            "SIM-005", "Chácara Boa Esperança", "Rio das Pedras", "PR",
+            "Herbiol Z-4 (fictício)", "2018-2020",
+            "Sem sinal na última coleta", "Baixa", "PO-SIM-05", 28.0, 0.02, 0.08,
+            "2026-09-05", "Acompanhamento de rotina",
+            "Cenário didático: manter coleta sazonal para comparação.",
+        ),
+        (
+            "SIM-006", "Sítio Pedra Branca", "Campo Sereno", "MS",
+            "Fungicida N-Delta (fictício)", "2021-2022",
+            "Sinal hipotético detectado", "Média", "PO-SIM-06", 22.0, 0.13, 0.09,
+            "2026-09-11", "Plano de contenção em análise",
+            "Cenário didático: investigar drenagem entre lavoura e captação.",
+        ),
+        (
+            "SIM-007", "Fazenda Lagoa Serena", "Vale das Nascentes", "MG",
+            "Inseticida Delta-Q (fictício)", "2017-2019",
+            "Monitoramento preventivo", "Baixa", "PO-SIM-07", 35.0, 0.03, 0.10,
+            "2026-09-16", "Monitoramento semestral",
+            "Cenário didático: coleta sem indício acima da referência fictícia.",
+        ),
+        (
+            "SIM-008", "Estância Campo Novo", "Rio das Pedras", "PR",
+            "Fungicida N-Delta (fictício)", "2023-2025",
+            "Sinal hipotético detectado", "Alta", "PO-SIM-08", 19.0, 0.37, 0.09,
+            "2026-09-23", "Avaliação de fonte alternativa",
+            "Cenário didático: avaliar captação alternativa durante investigação.",
+        ),
+    )
+    conexao.executemany(
+        """
+        INSERT OR IGNORE INTO rural_properties (
+            codigo, nome, municipio, estado, substancia, periodo_uso,
+            situacao_monitoramento, prioridade, poco, profundidade_poco_m,
+            concentracao_ug_l, referencia_ug_l, amostra_em,
+            medida_resposta, nota_tecnica
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        propriedades,
+    )
+
+
+def resumo_propriedades():
+    """Devolve apenas indicadores agregados para o painel público de nível 1."""
+    conexao = conectar()
+    try:
+        linha = conexao.execute(
+            """
+            SELECT COUNT(*) AS total,
+                   COUNT(DISTINCT municipio || ', ' || estado) AS municipios,
+                   SUM(CASE
+                       WHEN situacao_monitoramento = 'Sinal hipotético detectado'
+                       THEN 1 ELSE 0
+                   END) AS sinais_detectados
+            FROM rural_properties
+            """
+        ).fetchone()
+    finally:
+        conexao.close()
+    return dict(linha)
+
+
+def listar_propriedades(nivel):
+    """Lista apenas os campos autorizados para o nível solicitado (2 ou 3)."""
+    if nivel == config.NIVEL_DIRETOR:
+        colunas = (
+            "codigo, nome, municipio, estado, substancia, periodo_uso, "
+            "situacao_monitoramento, prioridade, amostra_em"
+        )
+    elif nivel == config.NIVEL_MINISTRO:
+        colunas = (
+            "codigo, nome, municipio, estado, substancia, periodo_uso, "
+            "situacao_monitoramento, prioridade, poco, profundidade_poco_m, "
+            "concentracao_ug_l, referencia_ug_l, amostra_em, medida_resposta, nota_tecnica"
+        )
+    else:
+        raise ValueError("A listagem detalhada exige nível 2 ou 3.")
+
+    conexao = conectar()
+    try:
+        linhas = conexao.execute(
+            f"""
+            SELECT {colunas}
+            FROM rural_properties
+            ORDER BY CASE prioridade
+                WHEN 'Alta' THEN 1
+                WHEN 'Média' THEN 2
+                ELSE 3
+            END, codigo
+            """
+        ).fetchall()
+    finally:
+        conexao.close()
+    return [dict(linha) for linha in linhas]
 
 
 def agora():

@@ -585,13 +585,27 @@ class BiometriaApp(tk.Tk):
                 embedding_tentativa=embedding,
                 origem=origem,
             )
-            return resultado, erro_imagem
+            usuario = None
+            dados_painel = None
+            if resultado["permitido"]:
+                usuario = database.buscar_usuario(id_usuario)
+                if usuario is None:
+                    raise RuntimeError(
+                        "O acesso foi autorizado, mas os dados do usuário não puderam ser carregados."
+                    )
+                progresso("Acesso autorizado. Carregando painel do nível...")
+                dados_painel = (
+                    database.resumo_propriedades()
+                    if nivel == config.NIVEL_TODOS
+                    else database.listar_propriedades(nivel)
+                )
+            return resultado, erro_imagem, usuario, dados_painel
 
         self.resultado_acesso.configure(text="Verificação em andamento...", style="CardText.TLabel")
         self._executar_em_segundo_plano(verificar, self._mostrar_resultado_acesso)
 
     def _mostrar_resultado_acesso(self, dados):
-        resultado, erro_imagem = dados
+        resultado, erro_imagem, usuario, dados_painel = dados
         permitido = resultado["permitido"]
         linhas = [
             "ACESSO PERMITIDO" if permitido else "ACESSO NEGADO",
@@ -617,6 +631,220 @@ class BiometriaApp(tk.Tk):
             style="ResultAllowed.TLabel" if permitido else "ResultDenied.TLabel",
         )
         self._atualizar_auditoria()
+        if permitido:
+            self._abrir_painel_propriedades(
+                resultado["nivel_recurso"],
+                usuario,
+                dados_painel,
+            )
+
+    def _abrir_painel_propriedades(self, nivel_recurso, usuario, dados):
+        cargos = {
+            config.NIVEL_TODOS: "Usuário público",
+            config.NIVEL_DIRETOR: "Diretor(a) de divisão",
+            config.NIVEL_MINISTRO: "Ministro(a) do Meio Ambiente",
+        }
+        painel = tk.Toplevel(self)
+        painel.title(f"Painel de propriedades | Nível {nivel_recurso}")
+        painel.geometry("1120x680")
+        painel.minsize(900, 540)
+        painel.configure(bg="#f2f5f3")
+
+        topo = ttk.Frame(painel, style="Header.TFrame", padding=(24, 18))
+        topo.pack(fill="x")
+        titulo = (
+            "Panorama público das propriedades"
+            if nivel_recurso == config.NIVEL_TODOS
+            else "Monitoramento de propriedades rurais"
+            if nivel_recurso == config.NIVEL_DIRETOR
+            else "Dossiê técnico de impacto hídrico"
+        )
+        ttk.Label(topo, text=titulo, style="HeaderBrand.TLabel").pack(anchor="w")
+        ttk.Label(
+            topo,
+            text=(
+                f"Conta: {usuario['nome']}  ·  {cargos[usuario['nivel']]}"
+                f"  ·  Nível do painel {nivel_recurso}"
+            ),
+            style="HeaderSubtitle.TLabel",
+        ).pack(anchor="w", pady=(5, 0))
+        if nivel_recurso == config.NIVEL_TODOS:
+            ttk.Label(
+                topo,
+                text="Painel público: identidade baseada no ID informado; não há validação facial neste nível.",
+                style="HeaderSubtitle.TLabel",
+            ).pack(anchor="w", pady=(3, 0))
+
+        aviso = ttk.Frame(painel, style="Card.TFrame", padding=(16, 10))
+        aviso.pack(fill="x", padx=20, pady=(16, 10))
+        ttk.Label(
+            aviso,
+            text="BASE DE DEMONSTRAÇÃO — todos os imóveis, municípios, compostos, "
+                 "medições e ocorrências abaixo são fictícios. Os compostos são inventados "
+                 "e os valores não representam limites regulatórios reais.",
+            style="CardText.TLabel",
+            wraplength=1020,
+            justify="left",
+        ).pack(anchor="w")
+
+        corpo = ttk.Frame(painel, padding=(20, 4, 20, 14))
+        corpo.pack(fill="both", expand=True)
+        if nivel_recurso == config.NIVEL_TODOS:
+            self._mostrar_resumo_publico(corpo, dados)
+        else:
+            self._mostrar_registros_propriedades(corpo, nivel_recurso, dados)
+
+        rodape = ttk.Frame(painel, padding=(20, 0, 20, 16))
+        rodape.pack(fill="x")
+        ttk.Button(rodape, text="Fechar painel", command=painel.destroy).pack(side="right")
+
+    def _mostrar_resumo_publico(self, pai, resumo):
+        pai.columnconfigure((0, 1, 2), weight=1)
+        pai.rowconfigure(1, weight=1)
+        ttk.Label(
+            pai,
+            text="Resumo do cenário de monitoramento",
+            style="CardTitle.TLabel",
+        ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(4, 14))
+
+        indicadores = (
+            ("PROPRIEDADES NO CENÁRIO", resumo["total"], "Registros simulados no catálogo"),
+            ("MUNICÍPIOS FICTÍCIOS", resumo["municipios"], "Localidades inventadas para demonstração"),
+            ("SINAIS HIPOTÉTICOS", resumo["sinais_detectados"], "Ocorrências simuladas que requerem avaliação"),
+        )
+        for coluna, (titulo, valor, descricao) in enumerate(indicadores):
+            cartao = ttk.Frame(pai, style="Card.TFrame", padding=18)
+            cartao.grid(row=1, column=coluna, sticky="new", padx=5)
+            ttk.Label(cartao, text=titulo, style="Field.TLabel").pack(anchor="w")
+            ttk.Label(
+                cartao,
+                text=str(valor),
+                background="#ffffff",
+                foreground="#167345",
+                font=("Segoe UI", 26, "bold"),
+            ).pack(anchor="w", pady=(8, 3))
+            ttk.Label(cartao, text=descricao, style="CardText.TLabel", wraplength=220).pack(anchor="w")
+
+        ttk.Label(
+            pai,
+            text="O painel público apresenta apenas totais agregados. A relação das propriedades "
+                 "e as informações de monitoramento exigem níveis de acesso superiores.",
+            style="CardText.TLabel",
+            wraplength=900,
+            justify="left",
+        ).grid(row=2, column=0, columnspan=3, sticky="w", padx=5, pady=(20, 0))
+
+    def _mostrar_registros_propriedades(self, pai, nivel, registros):
+        pai.columnconfigure(0, weight=1)
+        pai.rowconfigure(1, weight=1)
+        instrucoes = (
+            "Nível 2: resumo dos casos, localidade, composto simulado e prioridade de acompanhamento."
+            if nivel == config.NIVEL_DIRETOR
+            else "Nível 3: detalhes técnicos simulados das amostras e das medidas de resposta."
+        )
+        ttk.Label(pai, text=instrucoes, style="Subtitle.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(2, 10)
+        )
+
+        if nivel == config.NIVEL_DIRETOR:
+            colunas = (
+                ("codigo", "Código", 90),
+                ("nome", "Propriedade", 190),
+                ("local", "Município / UF", 150),
+                ("substancia", "Composto simulado", 190),
+                ("periodo", "Período de uso", 110),
+                ("situacao", "Monitoramento", 190),
+                ("prioridade", "Prioridade", 95),
+                ("amostra", "Última amostra", 110),
+            )
+        else:
+            colunas = (
+                ("codigo", "Código", 82),
+                ("nome", "Propriedade", 160),
+                ("local", "Município / UF", 125),
+                ("substancia", "Composto simulado", 150),
+                ("poco", "Poço", 90),
+                ("profundidade", "Prof. (m)", 78),
+                ("concentracao", "Resultado (µg/L)", 112),
+                ("referencia", "Referência simulada", 120),
+                ("amostra", "Amostra", 95),
+                ("resposta", "Medida de resposta", 185),
+            )
+
+        tabela_card = ttk.Frame(pai, style="Card.TFrame", padding=8)
+        tabela_card.grid(row=1, column=0, sticky="nsew")
+        tabela_card.columnconfigure(0, weight=1)
+        tabela_card.rowconfigure(0, weight=1)
+        nomes_colunas = tuple(item[0] for item in colunas)
+        tabela = ttk.Treeview(tabela_card, columns=nomes_colunas, show="headings")
+        for chave, rotulo, largura in colunas:
+            tabela.heading(chave, text=rotulo)
+            tabela.column(chave, width=largura, minwidth=65, anchor="w", stretch=True)
+        tabela.tag_configure("par", background="#f5f8f6")
+        tabela.tag_configure("prioridade_alta", foreground="#9b3f32")
+
+        for indice, registro in enumerate(registros):
+            local = f"{registro['municipio']} / {registro['estado']}"
+            if nivel == config.NIVEL_DIRETOR:
+                valores = (
+                    registro["codigo"], registro["nome"], local,
+                    registro["substancia"], registro["periodo_uso"],
+                    registro["situacao_monitoramento"], registro["prioridade"],
+                    registro["amostra_em"],
+                )
+            else:
+                valores = (
+                    registro["codigo"], registro["nome"], local,
+                    registro["substancia"], registro["poco"],
+                    f"{registro['profundidade_poco_m']:.1f}",
+                    f"{registro['concentracao_ug_l']:.2f}",
+                    f"{registro['referencia_ug_l']:.2f}",
+                    registro["amostra_em"], registro["medida_resposta"],
+                )
+            tags = ["par"] if indice % 2 == 0 else []
+            if registro["prioridade"] == "Alta":
+                tags.append("prioridade_alta")
+            tabela.insert("", tk.END, values=valores, tags=tuple(tags))
+
+        tabela.grid(row=0, column=0, sticky="nsew")
+        barra_vertical = ttk.Scrollbar(tabela_card, orient="vertical", command=tabela.yview)
+        barra_vertical.grid(row=0, column=1, sticky="ns")
+        barra_horizontal = ttk.Scrollbar(tabela_card, orient="horizontal", command=tabela.xview)
+        barra_horizontal.grid(row=1, column=0, sticky="ew")
+        tabela.configure(
+            yscrollcommand=barra_vertical.set,
+            xscrollcommand=barra_horizontal.set,
+        )
+
+        if nivel == config.NIVEL_MINISTRO:
+            nota = ttk.Label(
+                pai,
+                text="Os níveis e concentrações são parâmetros criados apenas para esta simulação. "
+                     "A nota técnica individual é exibida ao selecionar uma propriedade.",
+                style="CardText.TLabel",
+                wraplength=950,
+            )
+            nota.grid(row=2, column=0, sticky="w", pady=(9, 0))
+            detalhe_var = tk.StringVar(value="Selecione uma propriedade para ver a nota técnica.")
+            ttk.Label(
+                pai,
+                textvariable=detalhe_var,
+                style="CardText.TLabel",
+                wraplength=950,
+            ).grid(row=3, column=0, sticky="w", pady=(4, 0))
+
+            def mostrar_nota(evento):
+                selecionados = evento.widget.selection()
+                if not selecionados:
+                    return
+                codigo = tabela.item(selecionados[0], "values")[0]
+                registro = next(item for item in registros if item["codigo"] == codigo)
+                detalhe_var.set(
+                    f"{registro['codigo']} · {registro['situacao_monitoramento']} · "
+                    f"Nota técnica: {registro['nota_tecnica']}"
+                )
+
+            tabela.bind("<<TreeviewSelect>>", mostrar_nota)
 
     def _cadastrar_usuario(self):
         id_usuario = self.cadastro_id_var.get().strip()

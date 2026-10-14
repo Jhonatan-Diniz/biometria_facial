@@ -18,16 +18,22 @@ Na aba **Usuários** da interface, selecione uma pessoa para alterar seu nível
 ou excluí-la. A exclusão remove também as amostras faciais, mas preserva os
 registros de auditoria.
 
-## Estado atual
+## Painéis de propriedades
 
-**Fase 1 (núcleo) implementada.** Ainda não é o sistema completo: falta o
-banco de dados, o cadastro, a interface e a avaliação.
+Após a autorização, o aplicativo abre o painel do nível solicitado e mostra
+o nome e o cargo associados à conta que acessou:
 
-O que já funciona:
-- captura de imagem a partir de arquivo, vídeo ou webcam;
-- detecção de rosto com YuNet e alinhamento pelos 5 pontos de referência;
-- geração do embedding de 128 dimensões com SFace;
-- distância cosseno entre dois embeddings.
+- **Nível 1:** indicadores públicos agregados, sem dados por propriedade.
+- **Nível 2:** resumo de propriedades, localidades fictícias, compostos e
+  prioridades de monitoramento.
+- **Nível 3:** dados técnicos de poços, resultados simulados e notas de
+  acompanhamento.
+
+O SQLite cria automaticamente um catálogo demonstrativo com oito casos.
+Todos os imóveis, localidades, substâncias, medições e ocorrências são
+fictícios. As substâncias e referências foram inventadas para a simulação;
+os valores não representam limites regulatórios nem evidências ambientais
+reais.
 
 ## Instalação
 
